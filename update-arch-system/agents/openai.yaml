@@ -1,0 +1,4 @@
+interface:
+  display_name: "Update Arch System"
+  short_description: "Audit and install Arch and AUR upgrades"
+  default_prompt: "Use $update-arch-system to securely review and install all Arch Linux and AUR updates."
