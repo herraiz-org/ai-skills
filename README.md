@@ -1,6 +1,7 @@
 # ai-skills — Public AI Agent Skills
 
 [![skills.sh](https://skills.sh/b/herraiz-org/ai-skills)](https://skills.sh/herraiz-org/ai-skills)
+[![CI](https://github.com/herraiz-org/ai-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/herraiz-org/ai-skills/actions/workflows/ci.yml)
 
 A public home for the AI agent skills I write for my own workflow and consider worth sharing.
 Today it holds one: updating Arch Linux without blindly trusting AUR recipes. It is here because
@@ -115,6 +116,12 @@ make clean
 Optional tooling: [`uv`](https://docs.astral.sh/uv/) (preferred test runner — it pulls the Python
 dependencies automatically; otherwise `pytest` or `unittest` is used) and `shellcheck` (falls back
 to `bash -n` when absent).
+
+The same `make build` runs in GitHub Actions
+([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) on every push to `main` and every pull
+request, against Python 3.11, 3.12, and 3.13, with `shellcheck` present so the shell linting is
+the real thing rather than the `bash -n` fallback. Action versions are kept current by
+[Dependabot](.github/dependabot.yml).
 
 To try a working copy before pushing it, point the CLI at the checkout instead of at GitHub:
 
