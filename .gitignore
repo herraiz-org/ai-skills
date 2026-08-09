@@ -1,3 +1,33 @@
+# Python bytecode and caches
 __pycache__/
 *.pyc
+*.pyo
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Packaging artifacts
+build/
+dist/
+*.egg-info/
+
+# Claude Code local state — this repo publishes its skills from skills/,
+# so nothing under .claude/ belongs in version control.
+.claude/
+
+# Secrets
+.env
+.env.*
+
+# Local working notes, deliberately not published in this repo
+docs/
+
+# Editor and OS cruft
+.idea/
+.vscode/
+*.swp
+.DS_Store
