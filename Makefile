@@ -3,7 +3,10 @@
 SKILL_FILES := $(wildcard skills/*/SKILL.md)
 SKILLS      := $(patsubst %/SKILL.md,%,$(SKILL_FILES))
 
-.PHONY: all help test validate lint lint-skills lint-python lint-shell lint-payload build clean
+SHARED_SCANNER      := skills/update-arch-system/scripts/scan-aur-recipe.sh
+SHARED_SCANNER_COPIES := $(wildcard skills/*/scripts/scan-aur-recipe.sh)
+
+.PHONY: all help test validate lint lint-skills lint-python lint-shell lint-payload lint-shared build clean
 
 all: help
 
@@ -19,6 +22,7 @@ help:
 	@echo "  make test               Run the unit test suites under tests/"
 	@echo "  make validate           Validate skill metadata (SKILL.md frontmatter)"
 	@echo "  make lint               Run linting on python scripts, shell scripts, and skill metadata"
+	@echo "  make lint-shared        Check that duplicated shared scripts have not drifted"
 	@echo "  make build              Run linting, validation, and test suite"
 	@echo "  make clean              Remove Python bytecode and test cache artifacts"
 	@echo ""
@@ -86,7 +90,30 @@ lint-payload:
 		echo "[✓] No test material inside skills/."; \
 	fi
 
-lint: lint-skills lint-payload lint-python lint-shell
+lint-shared:
+	@echo "==> Checking that duplicated shared scripts have not drifted..."
+	@if [ ! -f "$(SHARED_SCANNER)" ]; then \
+		echo "[!] Canonical scanner missing at $(SHARED_SCANNER)"; \
+		exit 1; \
+	fi; \
+	errors=0; \
+	for copy in $(SHARED_SCANNER_COPIES); do \
+		if ! cmp -s "$(SHARED_SCANNER)" "$$copy"; then \
+			echo "[!] $$copy has drifted from $(SHARED_SCANNER)"; \
+			errors=$$((errors+1)); \
+		fi; \
+	done; \
+	if [ $$errors -gt 0 ]; then \
+		echo "[!] The skills CLI installs each skills/<name>/ directory as a"; \
+		echo "    self-contained payload, so a skill cannot reference a script"; \
+		echo "    inside a sibling skill. Copy the canonical file over the drifted"; \
+		echo "    one instead of editing a single side."; \
+		exit 1; \
+	else \
+		echo "[✓] All bundled copies of scan-aur-recipe.sh are identical."; \
+	fi
+
+lint: lint-skills lint-payload lint-shared lint-python lint-shell
 
 test:
 	@echo "==> Running tests across skills..."

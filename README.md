@@ -4,9 +4,10 @@
 [![CI](https://github.com/herraiz-org/ai-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/herraiz-org/ai-skills/actions/workflows/ci.yml)
 
 A public home for the AI agent skills I write for my own workflow and consider worth sharing.
-Today it holds one: updating Arch Linux without blindly trusting AUR recipes. It is here because
-it may be useful to other people with the same problem, not because it was designed as a
-general-purpose library.
+Today they cover one problem from two directions: using Arch Linux without blindly trusting AUR
+recipes — one skill for upgrading everything already installed, one for installing something new.
+They are here because they may be useful to other people with the same problem, not because they
+were designed as a general-purpose library.
 
 Each skill is a self-contained directory under [`skills/`](skills) with a `SKILL.md`, its helper
 scripts, and its reference documentation; the unit tests live in [`tests/`](tests), outside the
@@ -34,16 +35,34 @@ npx skills add herraiz-org/ai-skills -g
   - Passwords are never accepted in chat, arguments, or piped stdin — only an attached terminal or a graphical askpass helper.
   - Optional [arch-mcp](https://github.com/iht/arch-mcp) integration for news gating, Arch Wiki research, a second PKGBUILD analysis, and post-upgrade health checks. Every step keeps a plain-CLI fallback, so the skill works without the server.
 
+### `install-aur-package`
+- **Description**: Securely install a *named* package on Arch — official repositories first, and only then an AUR recipe that has been statically audited along with every AUR dependency it drags in.
+- **Useful if you**: install things from the AUR by name and want the name itself checked, the recipe reviewed before any of its code runs, and the same treatment applied to the build-time dependencies nobody reads.
+- **Key Features**:
+  - Name resolution gate — an inexact or ambiguous name stops for an explicit choice, never an auto-pick, with lookalikes and typosquats surfaced against votes, age, maintainer, and adoption.
+  - Official repositories win. A package `pacman` already ships is installed from there and never audited as an AUR recipe.
+  - Recursive AUR dependency audit: `depends`, `makedepends` and `checkdepends` are each reviewed the same way, with a visited set so cycles terminate. The transaction inherits the highest risk in the closure.
+  - Dependencies are read from `.SRCINFO` by [`scripts/list-recipe-deps.sh`](skills/install-aur-package/scripts/list-recipe-deps.sh) — a `PKGBUILD` cannot be parsed without executing it.
+  - Partial-upgrade block: pending updates stop the install rather than risking a `-Sy` into a mixed system.
+  - First-install risk model — no prior recipe exists to diff against, so identity, provenance and history carry the weight, and a missing baseline is not scored as a finding.
+  - The same bundled supply-chain scanner, race re-check, password handling, and optional [arch-mcp](https://github.com/iht/arch-mcp) integration as `update-arch-system`.
+
 ### ⚠️ Caveats
 
-This was written against one Linux setup and is shared as-is. Before trusting it on your machine,
-note that it assumes:
+These were written against one Linux setup and are shared as-is. Before trusting them on your
+machine, note that they assume:
 
-- `pacman` + `yay` on Arch (it will not work anywhere else);
-- that it may install `pacman-contrib`, which provides `checkupdates` and lets it enumerate
-  updates without sudo. It is pulled from the official repositories, either on its own or folded
-  into the upgrade transaction, never as a partial upgrade;
-- `python3`, and `uv` or `pytest`, for the bundled test suite.
+- `pacman` + `yay` on Arch (they will not work anywhere else);
+- that `update-arch-system` may install `pacman-contrib`, which provides `checkupdates` and lets
+  it enumerate updates without sudo. It is pulled from the official repositories, either on its
+  own or folded into the upgrade transaction, never as a partial upgrade. `install-aur-package`
+  never installs it, and degrades to a provisional staleness check instead;
+- `python3`, and `uv` or `pytest`, for the bundled test suites.
+
+`scan-aur-recipe.sh` is deliberately duplicated into both skills. The `skills` CLI installs each
+`skills/<name>/` directory as a self-contained payload, so one skill cannot reference a script
+living inside a sibling — the path exists in this repository and not on your machine.
+`make lint-shared` fails the build if the copies drift.
 
 Read the `SKILL.md` and the scripts before running anything that touches your package manager.
 Adapt the paths to fit your own environment.
@@ -64,14 +83,15 @@ npx skills add herraiz-org/ai-skills --list
 npx skills add herraiz-org/ai-skills -g
 
 # Or be explicit about skill and agent
-npx skills add herraiz-org/ai-skills -s update-arch-system -a claude-code -a codex -g
+npx skills add herraiz-org/ai-skills -s update-arch-system -s install-aur-package \
+  -a claude-code -a codex -g
 ```
 
 Notes on the flags:
 
 - **Scope.** The default is project scope (`./<agent>/skills/`), which is what you want when a
   skill belongs to one repository. Pass `-g` to install into your home directory instead, which is
-  the right choice for `update-arch-system`.
+  the right choice for both of these.
 - **Symlink vs copy.** The CLI keeps one canonical copy and symlinks each agent at it, so a single
   `npx skills update` refreshes them all. Add `--copy` where symlinks are not available.
 - **Non-interactive.** `-y` skips every prompt, which makes the command usable from CI or a
@@ -80,8 +100,8 @@ Notes on the flags:
 Updating and removing use the skill name, not the repository:
 
 ```bash
-npx skills update update-arch-system
-npx skills remove update-arch-system
+npx skills update install-aur-package
+npx skills remove install-aur-package
 npx skills list                       # what is installed, and for which agents
 ```
 
@@ -92,7 +112,7 @@ npx skills list                       # what is installed, and for which agents
 ## 🔒 Security audits
 
 skills.sh runs every published skill past three independent auditors — Gen Agent Trust Hub, Socket,
-and Snyk — and shows the verdicts on the
+and Snyk — and shows the verdicts on each
 [skill page](https://www.skills.sh/herraiz-org/ai-skills/update-arch-system). They read the skill's
 files, not its intent, so it is worth stating plainly what they find and why.
 
@@ -102,10 +122,10 @@ Anything under `skills/<name>/` is copied verbatim into the installed skill, so 
 there were graded as the skill's own behaviour rather than as test data. They now live in
 [`tests/`](tests), and `make lint-payload` fails the build if any come back.
 
-**The remaining findings are the skill's trust boundary, and they are real.** This skill fetches
-the Arch news feed, clones AUR recipes, and runs privileged `pacman` and `yay` operations. An
-auditor is right to flag all three; none can be removed without removing the skill. What the skill
-does instead is bound them:
+**The remaining findings are the skills' trust boundary, and they are real.** These skills fetch
+the Arch news feed, clone AUR recipes, and run privileged `pacman` and `yay` operations. An
+auditor is right to flag all three; none can be removed without removing the skills. What they do
+instead is bound them:
 
 - Untrusted recipe content is cloned into a disposable `mktemp -d` directory and reviewed
   statically — no sourcing the `PKGBUILD`, no `makepkg` — before any of its code runs.
@@ -118,6 +138,10 @@ does instead is bound them:
 
 A skill that touches your package manager deserves the scrutiny. Read `SKILL.md` and the scanner
 before you run it.
+
+`install-aur-package` adds one more privileged behaviour worth naming: it walks the AUR
+dependency closure, so a single request can clone several recipes it was never given by name.
+Each one is audited by the same rules, and the transaction inherits the highest risk in the set.
 
 ---
 
