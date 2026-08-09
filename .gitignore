@@ -23,6 +23,9 @@ dist/
 .env
 .env.*
 
+# Local working notes, deliberately not published in this repo
+docs/
+
 # Editor and OS cruft
 .idea/
 .vscode/
