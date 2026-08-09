@@ -1,0 +1,4 @@
+interface:
+  display_name: "Install AUR Package"
+  short_description: "Audit and install a named Arch or AUR package"
+  default_prompt: "Use $install-aur-package to securely review and install <package> on Arch Linux."
