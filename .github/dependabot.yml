@@ -1,0 +1,11 @@
+version: 2
+
+updates:
+  # The repository has no package manifests, so the actions used by the
+  # workflows are the only dependency surface worth tracking.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: ci
