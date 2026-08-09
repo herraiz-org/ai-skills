@@ -8,7 +8,8 @@ it may be useful to other people with the same problem, not because it was desig
 general-purpose library.
 
 Each skill is a self-contained directory under [`skills/`](skills) with a `SKILL.md`, its helper
-scripts, and unit tests. Install them with the [`skills`](https://github.com/vercel-labs/skills)
+scripts, and its reference documentation; the unit tests live in [`tests/`](tests), outside the
+published payload. Install them with the [`skills`](https://github.com/vercel-labs/skills)
 CLI, which detects the agent harnesses you have — Claude Code, Codex, Cursor, Google Antigravity,
 and dozens more:
 
@@ -87,6 +88,38 @@ npx skills list                       # what is installed, and for which agents
 
 ---
 
+## 🔒 Security audits
+
+skills.sh runs every published skill past three independent auditors — Gen Agent Trust Hub, Socket,
+and Snyk — and shows the verdicts on the
+[skill page](https://www.skills.sh/herraiz-org/ai-skills/update-arch-system). They read the skill's
+files, not its intent, so it is worth stating plainly what they find and why.
+
+**Test fixtures are not shipped.** The scanner's test suite feeds it deliberately malicious
+PKGBUILDs — a remote script piped into a shell, a plaintext `http://` source, a mutable `git+` ref.
+Anything under `skills/<name>/` is copied verbatim into the installed skill, so fixtures living
+there were graded as the skill's own behaviour rather than as test data. They now live in
+[`tests/`](tests), and `make lint-payload` fails the build if any come back.
+
+**The remaining findings are the skill's trust boundary, and they are real.** This skill fetches
+the Arch news feed, clones AUR recipes, and runs privileged `pacman` and `yay` operations. An
+auditor is right to flag all three; none can be removed without removing the skill. What the skill
+does instead is bound them:
+
+- Untrusted recipe content is cloned into a disposable `mktemp -d` directory and reviewed
+  statically — no sourcing the `PKGBUILD`, no `makepkg` — before any of its code runs.
+- The bundled [`scan-aur-recipe.sh`](skills/update-arch-system/scripts/scan-aur-recipe.sh) flags
+  dangerous shell constructs, and a manual checklist covers what regexes cannot.
+- Only **low** risk continues automatically; medium and high stop for explicit approval.
+- The audited commit is re-checked against the AUR remote HEAD immediately before installing.
+- Passwords never reach the agent: an attached terminal or a graphical askpass helper only, never
+  chat, arguments, or piped stdin.
+
+A skill that touches your package manager deserves the scrutiny. Read `SKILL.md` and the scanner
+before you run it.
+
+---
+
 ## 🛠️ Development & Quality Assurance
 
 To work on the skills themselves, clone the repository and use the [`Makefile`](Makefile), which
@@ -102,7 +135,7 @@ make validate
 # Run syntax linting on Python scripts, shell scripts, and skill metadata
 make lint
 
-# Run unit tests across all skill directories using uv, pytest, or unittest
+# Run the unit tests under tests/ using uv, pytest, or unittest
 make test
 
 # Complete build check (runs linting, validation, and unit tests)
@@ -144,11 +177,15 @@ The repository layout is the only convention — there is nothing to register.
 
 2. Follow the layout used by [`skills/update-arch-system/`](skills/update-arch-system):
    - `scripts/` — executables the skill invokes
-   - `tests/` — `test_*.py` unit tests
    - `references/` — longer documentation the skill loads on demand
    - `agents/` — optional per-harness agent definitions
 
-3. Run `make build` before committing.
+3. Put the unit tests in `tests/<skill_name>/` at the repository root — underscores, so the
+   directory is importable as a package — with an `__init__.py` beside them. Keep them out of
+   `skills/`: that directory is shipped to users and read by the skills.sh auditors, and
+   `make lint-payload` enforces it.
+
+4. Run `make build` before committing.
 
 ---
 
