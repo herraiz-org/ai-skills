@@ -15,9 +15,9 @@ build/
 dist/
 *.egg-info/
 
-# Claude Code local state (worktrees and per-user settings)
-.claude/worktrees/
-.claude/settings.local.json
+# Claude Code local state — this repo publishes its skills from skills/,
+# so nothing under .claude/ belongs in version control.
+.claude/
 
 # Secrets
 .env
