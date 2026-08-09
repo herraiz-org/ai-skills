@@ -1,3 +1,30 @@
+# Python bytecode and caches
 __pycache__/
 *.pyc
+*.pyo
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Packaging artifacts
+build/
+dist/
+*.egg-info/
+
+# Claude Code local state (worktrees and per-user settings)
+.claude/worktrees/
+.claude/settings.local.json
+
+# Secrets
+.env
+.env.*
+
+# Editor and OS cruft
+.idea/
+.vscode/
+*.swp
+.DS_Store
