@@ -3,9 +3,23 @@ import subprocess
 import tempfile
 import unittest
 
-# Path to the bundled scanner under test
+# Path to the bundled scanner under test.
+#
+# These tests live outside skills/ on purpose. Everything under skills/<name>/ is
+# copied verbatim into the published skill and read by the skills.sh security
+# auditors, and the fixtures below are deliberately malicious PKGBUILDs. Shipped
+# inside the skill they were graded as the skill's own behaviour rather than as
+# test data. See the "Security audits" section of the README.
 SCRIPT = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "scripts", "scan-aur-recipe.sh")
+    os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "..",
+        "skills",
+        "update-arch-system",
+        "scripts",
+        "scan-aur-recipe.sh",
+    )
 )
 
 # Exit code contract of scan-aur-recipe.sh

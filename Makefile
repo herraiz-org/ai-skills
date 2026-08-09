@@ -3,7 +3,7 @@
 SKILL_FILES := $(wildcard skills/*/SKILL.md)
 SKILLS      := $(patsubst %/SKILL.md,%,$(SKILL_FILES))
 
-.PHONY: all help test validate lint lint-skills lint-python lint-shell build clean
+.PHONY: all help test validate lint lint-skills lint-python lint-shell lint-payload build clean
 
 all: help
 
@@ -16,7 +16,7 @@ help:
 	@echo "  npx skills add herraiz-org/ai-skills -g"
 	@echo ""
 	@echo "Targets:"
-	@echo "  make test               Run unit test suites across all skill directories"
+	@echo "  make test               Run the unit test suites under tests/"
 	@echo "  make validate           Validate skill metadata (SKILL.md frontmatter)"
 	@echo "  make lint               Run linting on python scripts, shell scripts, and skill metadata"
 	@echo "  make build              Run linting, validation, and test suite"
@@ -72,7 +72,21 @@ lint-shell:
 		echo "[✓] bash -n syntax check passed (shellcheck not installed)."; \
 	fi
 
-lint: lint-skills lint-python lint-shell
+lint-payload:
+	@echo "==> Checking that no test material ships inside a skill..."
+	@stray=$$(find skills -type d -name "tests" -o -type f -name "test_*.py" -o -type f -name "*_test.py"); \
+	if [ -n "$$stray" ]; then \
+		echo "[!] Test material found under skills/:"; \
+		echo "$$stray" | sed 's/^/      /'; \
+		echo "[!] Everything under skills/ is copied verbatim into the published"; \
+		echo "    skill and read by the skills.sh security auditors, which grade"; \
+		echo "    malicious fixtures as the skill's own behaviour. Keep tests in tests/."; \
+		exit 1; \
+	else \
+		echo "[✓] No test material inside skills/."; \
+	fi
+
+lint: lint-skills lint-payload lint-python lint-shell
 
 test:
 	@echo "==> Running tests across skills..."
@@ -81,7 +95,7 @@ test:
 	elif command -v pytest >/dev/null 2>&1; then \
 		pytest; \
 	else \
-		find . -type d -name "tests" -exec python3 -m unittest discover -s {} -p "test_*.py" -v \; ; \
+		python3 -m unittest discover -s tests -p "test_*.py" -v; \
 	fi
 
 build: lint test
