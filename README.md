@@ -119,7 +119,7 @@ to `bash -n` when absent).
 
 The same `make build` runs in GitHub Actions
 ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) on every push to `main` and every pull
-request, against Python 3.11, 3.12, and 3.13, with `shellcheck` present so the shell linting is
+request, against Python 3.11, 3.12, 3.13, and 3.14, with `shellcheck` present so the shell linting is
 the real thing rather than the `bash -n` fallback. Action versions are kept current by
 [Dependabot](.github/dependabot.yml).
 
